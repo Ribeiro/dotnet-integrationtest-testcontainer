@@ -18,28 +18,33 @@ internal sealed class RabbitMqMessagePublisher(IConnectionFactory connectionFact
             exclusive: false,
             autoDelete: false,
             arguments: null);
+
         channel.ConfirmSelect();
 
-        var properties = channel.CreateBasicProperties();
+        channel.WaitForConfirmsOrDie();
+
+        channel.BasicPublish(
+            exchange: string.Empty,
+            routingKey: QueueName,
+            mandatory: true,
+            basicProperties: GetBasicProperties(channel),
+            body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message)));
+
+        return Task.CompletedTask;
+    }
+
+    private IBasicProperties GetBasicProperties(IModel? channel)
+    {
+        var properties = channel!.CreateBasicProperties();
         properties.MessageId = Guid.NewGuid().ToString();
         properties.ContentType = "application/json";
         properties.ContentEncoding = "utf-8";
         properties.Headers = new Dictionary<string, object>
         {
             { "x-user-agent", "Transactions.Api/1.0" },
-        };
+        };  
 
+        return properties;
 
-        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-
-        channel.WaitForConfirmsOrDie();
-        channel.BasicPublish(
-            exchange: string.Empty,
-            routingKey: QueueName,
-            mandatory: true,
-            basicProperties: properties,
-            body: body);
-
-        return Task.CompletedTask;
     }
 }
