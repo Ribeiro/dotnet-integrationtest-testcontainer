@@ -6,6 +6,8 @@ builder.Services.AddDataRepositories(builder.Configuration);
 builder.Services.AddScoped<ITransactionProcessingService, TransactionProcessingService>();
 
 var app = builder.Build();
+app.MapGet("/", () => "Hello World!");
+app.MapGet("/health", () => "Up and Running!");
 
 var api = app.MapGroup("/api");
 
@@ -19,6 +21,8 @@ api.MapPost(
 .WithName("RegisterTransaction")
 .WithTags("Transactions")
 .WithOpenApi();
+
+
 
 await app
     .RunAsync()
